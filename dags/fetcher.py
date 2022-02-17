@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 import time
+import urllib.request
+import json
 
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
@@ -34,28 +36,29 @@ with DAG(
     def my_sleeping_function(random_base):
         """This is a function that will run within the DAG execution"""
         time.sleep(random_base)
+    
+    def get_weather_data(city:str, country_code:str, api_key:str):
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country_code}&units=metric&appid={api_key}"
+        result = json.load(urllib.request.urlopen(url))
+        result['weather'] = json.dumps(result['weather']) if 'weather' in result else '[]'
+        return result
+
 
     t1 = PythonOperator(
         task_id='ingest_api_data',
-        python_callable=my_sleeping_function,
-        op_kwargs={'random_base': 101.0 / 10},
+        python_callable=get_weather_data,
+        op_kwargs={'city': 'vancouver', 'country_code': 'ca', 'api_key': '3a7100422018837ce9983e795878384b'}, #TODO get from variables
     )
 
-    # @TODO: Fill in the below
+    # Create a table to store the raw data
     t2 = PostgresOperator(
         task_id="create_raw_dataset",
-        sql="""
-            CREATE TABLE IF NOT EXISTS raw_current_weather (
-           );
-          """,
+        sql="create_raw_data_table.sql",
     )
 
-    # @TODO: Fill in the below
     t3 = PostgresOperator(
         task_id="store_dataset",
-        sql="""
-            INSERT INTO ...
-          """,
+        sql="raw_data_insert.sql",
     )
 
     t1 >> t2 >> t3
