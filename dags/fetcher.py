@@ -32,17 +32,12 @@ with DAG(
         catchup=False,
         tags=['take-home'],
 ) as dag:
-
-    # @TODO: Add your function here. Example here: https://airflow.apache.org/docs/apache-airflow/stable/_modules/airflow/example_dags/example_python_operator.html
-    # Hint: How to fetch the weather data from OpenWeatherMap?
-    def my_sleeping_function(random_base):
-        """This is a function that will run within the DAG execution"""
-        time.sleep(random_base)
     
     def get_weather_data(city:str, country_code:str, api_key:str):
         url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country_code}&units=metric&appid={api_key}"
         result = json.load(urllib.request.urlopen(url))
-        result['weather'] = json.dumps(result['weather']) if 'weather' in result else '[]'
+        #result['weather'] = json.dumps(result['weather']) if 'weather' in result else '[]'
+        result = json.dumps(result)
         return result
 
 
@@ -55,12 +50,12 @@ with DAG(
     # Create a table to store the raw data
     t2 = PostgresOperator(
         task_id="create_raw_dataset",
-        sql="create_raw_data_table.sql",
+        sql="sql/create_raw_data_table.sql",
     )
 
     t3 = PostgresOperator(
         task_id="store_dataset",
-        sql="raw_data_insert.sql",
+        sql="sql/raw_data_insert.sql",
     )
 
     t1 >> t2 >> t3
