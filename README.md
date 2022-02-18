@@ -92,16 +92,31 @@ Fork this repository and clone to your local environment
 - **Note:** If you are using Apple hardware with M1 processor, there is a common challenge with Docker. You can read more about it [here](https://javascript.plainenglish.io/which-docker-images-can-you-use-on-the-mac-m1-daba6bbc2dc5).
 
 ## Your notes (Readme.md) 
-@TODO: Add any additional notes / documentation in this file.
+
+1. `fetcher dag` inserts data into the `raw_current_weather` table in a very raw format: the entire json returned. An `id` field was created to identify unique rows and a `ingestion_timestamp` field to keep track of when this data was inserted into the table.
+2. `tranformer dag` get all ids that are missing transformation from `raw_current_weather` and inserts them into `current_weather` and `current_weather_conditions` tables. All json fields are unested and tranformed into columns. A field called `etl_timestamp_utc` is added to the new tables to track when the tranformation ocurred. 
+3. `current_weather_conditions` represents the weather list return from the API, as it is a list the best way to represent it was a separate table from `current_weather`.
 
 ### Time spent
-Give us a rough estimate of the time you spent working on this. If you spent time learning in order to do this project please feel free to let us know that too. This makes sure that we are evaluating your work fairly and in context. It also gives us the opportunity to learn and adjust our process if needed.
+
+Around 1:40.
+I took some time to install Docker and configure WSL2 (I need to do this on an old Windows laptop I have that was not prepared for development :) )
+
 
 ### Assumptions
-Did you find yourself needing to make assumptions to finish this? If so, what were they and how did they impact your design/code?
+
+* Assumed that we only want to collect data from one city.
+* For this challanged I assumed that there was no problem in using the existing airflow database to my tables, in a real world scenario that would not be wise.
+* I assumed that the list attribute would be better unested in another table to facilitate joins, so the SQLs used to explore it could be more "standard". Depending on the situation, the main users of this data would be familiar enough with json operators/functins and that would not be needed (and dependending on the access pattern even beneficial to avoid a join).
+* Each transformer dag execution should try to transform all missing data, making the executions to not be idempontent.
 
 ### Next steps
-Provide us with some notes about what you would do next if you had more time. Are there additional features that you would want to add? Specific improvements to your code you would make?
+
+* On the table current_weather_conditions I would try to create a column with the index and keep it there. 
+* Create a bigger/diverse dataset to validate my SQLs, it may have hidden bugs that will appear in a more diverse dataset.
+* Create a table with the summarized view of the weather in a location groupbed by day.
+* Add a foreign key in `current_weather_conditions` table to guarantee referencial integrity.
+* Validate the performance of the left join used to determine which data still need to be tranformed. Maybe some flag column in the raw table could help to avoid the join by allowing a direct filter by it.
 
 ### Instructions to the evaluator
 Provide any end user documentation you think is necessary and useful here
