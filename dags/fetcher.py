@@ -44,7 +44,7 @@ with DAG(
     t1 = PythonOperator(
         task_id='ingest_api_data',
         python_callable=get_weather_data,
-        op_kwargs={'city': Variable.get('openweather_city'), 'country_code': Variable.get('openweather_country'), 'api_key': Variable.get("openweather_api_key") }, #TODO get from variables
+        op_kwargs={'city': Variable.get('openweather_city'), 'country_code': Variable.get('openweather_country'), 'api_key': Variable.get("openweather_api_key") },
     )
 
     # Create a table to store the raw data
