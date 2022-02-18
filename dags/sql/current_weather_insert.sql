@@ -1,0 +1,42 @@
+insert into current_weather
+select 
+	rcw.id,
+	rcw.ingestion_timestamp_utc,
+	(to_timestamp((raw_data->'dt')::int) at time zone 'utc')::timestamp as datetime_utc,
+	raw_data->>'name' as city_name,
+	(raw_data->'id')::int  as city_id,
+	(raw_data->'timezone')::int as timezone_offset,
+	(to_timestamp(((raw_data->'dt')::int) + ((raw_data->'timezone')::int)) at time zone 'utc') ::timestamp as datetime_local,
+	(raw_data->'coord'->'lat')::decimal(9,6) as latitude,
+	(raw_data->'coord'->'lon')::decimal(9,6) as longitude,
+	raw_data->>'base' as base,
+	(raw_data->'main'->'temp')::decimal(5,2) as main_temp_c,
+	(raw_data->'main'->'feels_like')::decimal(5,2) as main_feels_like_c,
+	(raw_data->'main'->'pressure')::int as main_pressure_hpa,
+	(raw_data->'main'->'humidity')::int as main_humidity,
+	(raw_data->'main'->'temp_min')::decimal(5,2) as main_temp_min_c,
+	(raw_data->'main'->'temp_max')::decimal(5,2) as main_temp_max_c,
+	(raw_data->'main'->'sea_level')::integer as main_sea_level_hpa,
+	(raw_data->'main'->'grnd_level')::integer as main_grnd_level_hpa,
+	(raw_data->'wind'->'speed')::decimal(9,2) as wind_speed_m_s,
+	(raw_data->'wind'->'deg')::decimal(9,2) as wind_deg,
+	(raw_data->'wind'->'gust')::decimal(9,2) as wind_gust_m_s,
+	(raw_data->'clouds' -> 'all')::decimal(5,2) as clouds_all_perc,
+	(raw_data->'rain'->'1h')::decimal(9,2) as rain_1h_mm,
+	(raw_data->'rain'->'3h')::decimal(9,2) as rain_3h_mm,
+	(raw_data->'snpw'->'1h')::decimal(9,2) as snow_1h_mm,
+	(raw_data->'snow'->'3h')::decimal(9,2) as snow_3h_mm,
+	(raw_data->'sys'->'type')::int as sys_type,
+	(raw_data->'sys'->'id')::int as sys_id,
+	raw_data->'sys'->>'message' as sys_message,
+	raw_data->'sys'->>'country' as sys_message,
+	(to_timestamp((raw_data->'sys'->'sunrise')::int) at time zone 'utc')::timestamp as sys_sunrise_utc,
+	(to_timestamp((raw_data->'sys'->'sunset')::int) at time zone 'utc')::timestamp as sys_sunset_utc,	
+	(to_timestamp(((raw_data->'sys'->'sunrise')::int) + ((raw_data->'timezone')::int)) at time zone 'utc') ::timestamp as sys_sunrise_local,
+	(to_timestamp(((raw_data->'sys'->'sunset')::int) + ((raw_data->'timezone')::int)) at time zone 'utc') ::timestamp as sys_sunset_local,
+	(raw_data->'cod')::int as cod,
+	(now() at time zone 'utc')::timestamp as etl_timestamp_utc
+from raw_current_weather rcw
+ 	left outer join current_weather cw on rcw.id = cw.id 
+where 
+	cw.id is null;

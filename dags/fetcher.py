@@ -1,12 +1,16 @@
 from datetime import datetime, timedelta
 import time
+import urllib.request
+import json
 
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
+from airflow.models import Variable
 
 # Operators; we need this to operate!
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+
 
 # These args will get passed on to each operator
 # You can override them on a per-task basis during operator initialization
@@ -28,34 +32,30 @@ with DAG(
         catchup=False,
         tags=['take-home'],
 ) as dag:
+    
+    def get_weather_data(city:str, country_code:str, api_key:str):
+        url = f"http://api.openweathermap.org/data/2.5/weather?q={city},{country_code}&units=metric&appid={api_key}"
+        result = json.load(urllib.request.urlopen(url))
+        #result['weather'] = json.dumps(result['weather']) if 'weather' in result else '[]'
+        result = json.dumps(result)
+        return result
 
-    # @TODO: Add your function here. Example here: https://airflow.apache.org/docs/apache-airflow/stable/_modules/airflow/example_dags/example_python_operator.html
-    # Hint: How to fetch the weather data from OpenWeatherMap?
-    def my_sleeping_function(random_base):
-        """This is a function that will run within the DAG execution"""
-        time.sleep(random_base)
 
     t1 = PythonOperator(
         task_id='ingest_api_data',
-        python_callable=my_sleeping_function,
-        op_kwargs={'random_base': 101.0 / 10},
+        python_callable=get_weather_data,
+        op_kwargs={'city': Variable.get('openweather_city'), 'country_code': Variable.get('openweather_country'), 'api_key': Variable.get("openweather_api_key") },
     )
 
-    # @TODO: Fill in the below
+    # Create a table to store the raw data
     t2 = PostgresOperator(
         task_id="create_raw_dataset",
-        sql="""
-            CREATE TABLE IF NOT EXISTS raw_current_weather (
-           );
-          """,
+        sql="sql/create_raw_data_table.sql",
     )
 
-    # @TODO: Fill in the below
     t3 = PostgresOperator(
         task_id="store_dataset",
-        sql="""
-            INSERT INTO ...
-          """,
+        sql="sql/raw_data_insert.sql",
     )
 
     t1 >> t2 >> t3
