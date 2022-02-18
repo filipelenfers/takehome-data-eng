@@ -25,20 +25,19 @@ with DAG(
         tags=['take-home'],
 ) as dag:
 
-    # @TODO: Fill in the below
     t1 = PostgresOperator(
         task_id="create_modeled_dataset_table",
-        sql="""
-            CREATE TABLE IF NOT EXISTS current_weather (
-           );
-          """,
+        sql="sql/create_modeled_tables.sql",
     )
 
-    # @TODO: Fill in the below
     t2 = PostgresOperator(
-        task_id="transform_raw_into_modelled",
-        sql="""
-            SELECT * FROM raw_current_weather ...
-          """,
+        task_id="transform_raw_into_current_weather",
+        sql="sql/current_weather_insert.sql",
     )
-    t1 >> t2
+
+    t3 = PostgresOperator(
+        task_id="transform_raw_into_current_weather_conditions",
+        sql="sql/current_weather_conditions_insert.sql",
+    )
+
+    t1 >> t2 >> t3
