@@ -5,10 +5,12 @@ import json
 
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
+from airflow.models import Variable
 
 # Operators; we need this to operate!
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+
 
 # These args will get passed on to each operator
 # You can override them on a per-task basis during operator initialization
@@ -47,7 +49,7 @@ with DAG(
     t1 = PythonOperator(
         task_id='ingest_api_data',
         python_callable=get_weather_data,
-        op_kwargs={'city': 'vancouver', 'country_code': 'ca', 'api_key': '3a7100422018837ce9983e795878384b'}, #TODO get from variables
+        op_kwargs={'city': Variable.get('openweather_city'), 'country_code': Variable.get('openweather_country'), 'api_key': Variable.get("openweather_api_key") }, #TODO get from variables
     )
 
     # Create a table to store the raw data
